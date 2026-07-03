@@ -33,6 +33,14 @@ export type VisitReadiness = {
   score: number;
   completed_items: string[];
   missing_items: string[];
+  rules: VisitReadinessRule[];
+};
+
+export type VisitReadinessRule = {
+  key: string;
+  label: string;
+  points: number;
+  status: "complete" | "missing";
 };
 
 export type VisitBrief = {
@@ -42,6 +50,7 @@ export type VisitBrief = {
   questions_for_visit: string[];
   preparation_checklist: string[];
   safety_note: string;
+  safety_flags: string[];
   readiness: VisitReadiness;
   generated_at: string;
 };
@@ -61,7 +70,15 @@ export type VisitListItem = {
   main_concern: string;
   symptom_count: number;
   question_count: number;
+  readiness_score: number;
   created_at: string;
+};
+
+export type PrivacyStatus = {
+  storage: string;
+  analytics_enabled: boolean;
+  external_api_calls: boolean;
+  notes: string[];
 };
 
 export type BriefPanelState =

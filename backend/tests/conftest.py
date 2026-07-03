@@ -1,4 +1,5 @@
 import pytest
+from datetime import date, timedelta
 from fastapi.testclient import TestClient
 
 from app.database import init_db
@@ -20,16 +21,18 @@ def client():
 
 @pytest.fixture
 def visit_payload():
+    appointment_date = date.today() + timedelta(days=7)
+    symptom_started_on = date.today() - timedelta(days=2)
     return {
         "patient_name": "Maya Sharma",
-        "appointment_date": "2026-07-12",
+        "appointment_date": appointment_date.isoformat(),
         "clinician_type": "Primary care",
         "main_concern": "Recurring headaches after long workdays",
         "symptoms": [
             {
                 "name": "Headache",
                 "severity": 7,
-                "started_on": "2026-07-01",
+                "started_on": symptom_started_on.isoformat(),
                 "frequency": "Most evenings",
                 "notes": "Improves after sleep",
             },

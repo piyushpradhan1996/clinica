@@ -1,9 +1,10 @@
-import type { VisitBrief, VisitCreate, VisitListItem, VisitRecord } from "./types";
+import type { PrivacyStatus, VisitBrief, VisitCreate, VisitListItem, VisitRecord } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-export async function listVisits(): Promise<VisitListItem[]> {
-  return requestJson<VisitListItem[]>("/api/visits");
+export async function listVisits(search = ""): Promise<VisitListItem[]> {
+  const params = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
+  return requestJson<VisitListItem[]>(`/api/visits${params}`);
 }
 
 export async function readVisit(visitId: number): Promise<VisitRecord> {
@@ -22,6 +23,35 @@ export async function createVisit(payload: VisitCreate): Promise<VisitRecord> {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function updateVisit(visitId: number, payload: VisitCreate): Promise<VisitRecord> {
+  return requestJson<VisitRecord>(`/api/visits/${visitId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function duplicateVisit(visitId: number): Promise<VisitRecord> {
+  return requestJson<VisitRecord>(`/api/visits/${visitId}/duplicate`, {
+    method: "POST"
+  });
+}
+
+export async function deleteVisit(visitId: number): Promise<void> {
+  await requestJson<{ deleted_count: number }>(`/api/visits/${visitId}`, {
+    method: "DELETE"
+  });
+}
+
+export async function clearVisits(): Promise<void> {
+  await requestJson<{ deleted_count: number }>("/api/visits", {
+    method: "DELETE"
+  });
+}
+
+export async function getPrivacyStatus(): Promise<PrivacyStatus> {
+  return requestJson<PrivacyStatus>("/api/privacy");
 }
 
 export function exportVisitUrl(visitId: number): string {

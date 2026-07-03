@@ -44,8 +44,8 @@ def save_visit(payload: VisitCreate, brief: VisitBrief) -> VisitRecord:
             VALUES (?, ?, ?)
             """,
             (
-                json.dumps(payload.model_dump(mode="json")),
-                json.dumps(brief.model_dump(mode="json")),
+                _dump_model(payload),
+                _dump_model(brief),
                 created_at.isoformat(),
             ),
         )
@@ -54,18 +54,34 @@ def save_visit(payload: VisitCreate, brief: VisitBrief) -> VisitRecord:
     return VisitRecord(id=visit_id, payload=payload, brief=brief, created_at=created_at)
 
 
-def list_visits() -> list[VisitListItem]:
+def list_visits(search: str | None = None) -> list[VisitListItem]:
     with get_connection() as connection:
         rows = connection.execute(
             """
-            SELECT id, payload_json, created_at
+            SELECT id, payload_json, brief_json, created_at
             FROM visits
             ORDER BY id DESC
-            LIMIT 25
             """
         ).fetchall()
 
-    return [_row_to_list_item(row) for row in rows]
+    items = [_row_to_list_item(row) for row in rows]
+    if search:
+        normalized_search = search.casefold().strip()
+        items = [
+            item
+            for item in items
+            if normalized_search
+            in " ".join(
+                [
+                    item.patient_name,
+                    item.clinician_type,
+                    item.main_concern,
+                    item.appointment_date.isoformat(),
+                ]
+            ).casefold()
+        ]
+
+    return items[:25]
 
 
 def get_visit(visit_id: int) -> VisitRecord | None:
@@ -85,6 +101,40 @@ def get_visit(visit_id: int) -> VisitRecord | None:
     return _row_to_record(row)
 
 
+def update_visit(visit_id: int, payload: VisitCreate, brief: VisitBrief) -> VisitRecord | None:
+    existing = get_visit(visit_id)
+    if existing is None:
+        return None
+
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE visits
+            SET payload_json = ?, brief_json = ?
+            WHERE id = ?
+            """,
+            (
+                _dump_model(payload),
+                _dump_model(brief),
+                visit_id,
+            ),
+        )
+
+    return VisitRecord(id=visit_id, payload=payload, brief=brief, created_at=existing.created_at)
+
+
+def delete_visit(visit_id: int) -> bool:
+    with get_connection() as connection:
+        cursor = connection.execute("DELETE FROM visits WHERE id = ?", (visit_id,))
+        return cursor.rowcount > 0
+
+
+def delete_all_visits() -> int:
+    with get_connection() as connection:
+        cursor = connection.execute("DELETE FROM visits")
+        return int(cursor.rowcount)
+
+
 def _row_to_record(row: sqlite3.Row) -> VisitRecord:
     payload_data: dict[str, Any] = json.loads(row["payload_json"])
     brief_data: dict[str, Any] = json.loads(row["brief_json"])
@@ -98,6 +148,7 @@ def _row_to_record(row: sqlite3.Row) -> VisitRecord:
 
 def _row_to_list_item(row: sqlite3.Row) -> VisitListItem:
     payload_data: dict[str, Any] = json.loads(row["payload_json"])
+    brief_data: dict[str, Any] = json.loads(row["brief_json"])
     return VisitListItem(
         id=int(row["id"]),
         patient_name=payload_data["patient_name"],
@@ -106,5 +157,10 @@ def _row_to_list_item(row: sqlite3.Row) -> VisitListItem:
         main_concern=payload_data["main_concern"],
         symptom_count=len(payload_data.get("symptoms", [])),
         question_count=len(payload_data.get("questions", [])),
+        readiness_score=brief_data.get("readiness", {}).get("score", 0),
         created_at=datetime.fromisoformat(row["created_at"]),
     )
+
+
+def _dump_model(model: VisitCreate | VisitBrief) -> str:
+    return json.dumps(model.model_dump(mode="json"))

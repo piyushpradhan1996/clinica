@@ -13,6 +13,8 @@ The project is intentionally practical: no diagnosis, no medical claims, no hidd
 - Generate a concise visit brief and preparation checklist.
 - Preview the visit brief before saving it to history.
 - Show readiness gaps so users know what would still be useful to add.
+- Search, edit, duplicate, and delete saved visit briefs.
+- Clear all locally saved visit data.
 - Export the saved brief as Markdown.
 - Keep a recent-visit history in SQLite.
 
@@ -34,9 +36,14 @@ The project is intentionally practical: no diagnosis, no medical claims, no hidd
 | `GET` | `/health` | Service health check |
 | `POST` | `/api/visits/preview` | Generate a brief without saving |
 | `POST` | `/api/visits` | Save a visit and generated brief |
-| `GET` | `/api/visits` | List recent visits |
+| `GET` | `/api/visits?search=` | List or search recent visits |
+| `DELETE` | `/api/visits` | Clear all saved visits |
 | `GET` | `/api/visits/{id}` | Read one saved visit |
+| `PUT` | `/api/visits/{id}` | Replace one saved visit |
+| `DELETE` | `/api/visits/{id}` | Delete one saved visit |
+| `POST` | `/api/visits/{id}/duplicate` | Duplicate one saved visit |
 | `GET` | `/api/visits/{id}/export` | Export the visit brief as Markdown |
+| `GET` | `/api/privacy` | Return privacy and storage posture |
 
 ## Run Backend
 
@@ -75,4 +82,5 @@ Frontend:
 cd frontend
 npm run test
 npm run build
+npm run test:e2e
 ```

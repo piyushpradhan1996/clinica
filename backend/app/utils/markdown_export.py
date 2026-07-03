@@ -4,6 +4,7 @@ from app.schemas import VisitRecord
 def render_visit_markdown(record: VisitRecord) -> str:
     payload = record.payload
     brief = record.brief
+    safety_flag_lines = [f"- {flag}" for flag in brief.safety_flags] if brief.safety_flags else ["- None detected"]
     lines = [
         f"# Clinica Visit Brief: {payload.appointment_date.isoformat()}",
         "",
@@ -29,11 +30,20 @@ def render_visit_markdown(record: VisitRecord) -> str:
         "Still Useful To Add:",
         *[f"- {item}" for item in brief.readiness.missing_items],
         "",
+        "Rules:",
+        *[
+            f"- [{rule.status}] {rule.label} ({rule.points} pts)"
+            for rule in brief.readiness.rules
+        ],
+        "",
         "## Preparation Checklist",
         *[f"- {item}" for item in brief.preparation_checklist],
         "",
         "## Safety Note",
         brief.safety_note,
+        "",
+        "Safety flags:",
+        *safety_flag_lines,
     ]
 
     return "\n".join(lines).strip() + "\n"
